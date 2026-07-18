@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Source Preview | The Ivy Leaf Project</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell archive-page">
+      <header class="archive-header">
+        <p class="eyebrow">The Ivy Leaf Project</p>
+        <h1>Source preview</h1>
+        <p class="hero-copy">This link points to a Google Docs or Drive document. The preview page opens a public read-only view when possible so visitors can inspect it without landing in an editing session.</p>
+        <div class="hero-actions">
+          <a class="button secondary" href="index.html">Back home</a>
+          <a id="original-link" class="button primary" href="#">Open public view</a>
+        </div>
+      </header>
+
+      <section class="archive-card">
+        <h2>Source link</h2>
+        <p id="source-url-display">No source URL was provided.</p>
+        <p id="public-note" class="notes"></p>
+      </section>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const originalUrl = params.get("url") || "";
+      const display = document.getElementById("source-url-display");
+      const button = document.getElementById("original-link");
+      const note = document.getElementById("public-note");
+
+      function getPublicViewUrl(url) {
+        if (!url) return "";
+
+        const trimmedUrl = url.trim();
+        const docsMatch = trimmedUrl.match(/https?:\/\/docs\.google\.com\/(document|spreadsheets|presentation|drawings)\/d\/([^/]+)\/(?:edit|view|pub|preview)?/i);
+
+        if (docsMatch) {
+          return `https://docs.google.com/${docsMatch[1]}/d/${docsMatch[2]}/view?usp=sharing`;
+        }
+
+        const driveFileMatch = trimmedUrl.match(/https?:\/\/drive\.google\.com\/file\/d\/([^/]+)\/view/i);
+        if (driveFileMatch) {
+          return `https://drive.google.com/file/d/${driveFileMatch[1]}/view?usp=sharing`;
+        }
+
+        const driveOpenMatch = trimmedUrl.match(/https?:\/\/drive\.google\.com\/open\?id=([^&]+)/i);
+        if (driveOpenMatch) {
+          return `https://drive.google.com/file/d/${driveOpenMatch[1]}/view?usp=sharing`;
+        }
+
+        return trimmedUrl;
+      }
+
+      if (originalUrl) {
+        const publicViewUrl = getPublicViewUrl(originalUrl);
+        display.textContent = originalUrl;
+        button.href = publicViewUrl || originalUrl;
+        button.target = "_blank";
+        button.rel = "noreferrer";
+
+        if (publicViewUrl && publicViewUrl !== originalUrl) {
+          note.textContent = "Opened as a public viewing link to avoid an edit session.";
+        } else {
+          note.textContent = "This link is already a public view or does not need conversion.";
+        }
+      } else {
+        button.style.display = "none";
+      }
+    </script>
+  </body>
+</html>

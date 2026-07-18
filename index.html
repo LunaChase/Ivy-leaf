@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Ivy Leaf is a simple space to collect ideas, stories, and reports about sustainable architecture and engineering." />
+    <title>The Ivy Leaf Project</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="hero">
+        <div class="hero-content">
+          <p class="eyebrow">The Ivy Leaf Project</p>
+          <h1>Through research-based reports on urban architecture, engineering, and environmental innovation, the Ivy Leaf Project is sharing technologies and ideas that are shaping a more sustainable future.</h1>
+          <p class="hero-copy">
+            The Ivy Leaf Project is a calm home for reports, case studies, and hopeful ideas about sustainable architecture,
+            green engineering, and climate-smart design. Visitors can read the archive, while only the owner can add new stories.
+          </p>
+          <div class="hero-actions">
+            <a class="button secondary" href="library.html">Browse the library</a>
+            <a class="button ghost" href="#owner-access">Owner access</a>
+          </div>
+          <div class="topic-row" aria-label="New stories">
+            <a class="topic-pill" href="urban-design.html">Urban design</a>
+            <a class="topic-pill" href="architecture.html">Architecture</a>
+            <a class="topic-pill" href="engineering.html">Engineering</a>
+            <a class="topic-pill" href="innovations.html">Innovations</a>
+            <a class="topic-pill" href="environmental-reports.html">Environmental reports</a>
+          </div>
+          <ul class="feature-list">
+            <li>Save lessons from research, design, and real projects</li>
+            <li>Upload PDFs, images, or links from the web</li>
+            <li>Keep everything organized around climate-positive ideas</li>
+          </ul>
+        </div>
+
+        <div class="hero-card">
+          <div class="info-card compact-card">
+            <h3>New stories</h3>
+            <div class="topic-row" aria-label="New stories">
+              <a class="topic-pill" href="urban-design.html">Urban design</a>
+              <a class="topic-pill" href="architecture.html">Architecture</a>
+              <a class="topic-pill" href="engineering.html">Engineering</a>
+              <a class="topic-pill" href="innovations.html">Innovations</a>
+              <a class="topic-pill" href="environmental-reports.html">Environmental reports</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="intro-grid" aria-label="How Ivy Leaf helps">
+        <article class="info-card">
+          <h3>Why this exists</h3>
+          <p>To gather practical ideas that can support healthier buildings and a more resilient planet.</p>
+        </article>
+        <article class="info-card">
+          <h3>What to add</h3>
+          <p>Reports, case studies, sketches, notes, or links that connect design with sustainability.</p>
+        </article>
+        <article class="info-card">
+          <h3>How it works</h3>
+          <p>Everything is saved in your browser so you can start quickly without needing a complex setup.</p>
+        </article>
+      </section>
+
+      <section class="library-section" id="library-section">
+        <div class="section-heading">
+          <h2>Your story library</h2>
+          <p>Tip: export a Google Doc as PDF or Word before uploading it.</p>
+        </div>
+        <div class="archive-preview">
+          <p>Browse the full archive and category pages from the library view.</p>
+        </div>
+      </section>
+
+      <section class="owner-section" id="owner-access">
+        <div class="owner-card">
+          <div id="unlock-panel" class="upload-panel">
+            <h2>Owner access</h2>
+            <p class="upload-copy">Visitors can browse the stories, but only the owner can add new ones.</p>
+            <form id="unlock-form" class="unlock-form">
+              <label>
+                Owner password
+                <input name="password" type="password" placeholder="Enter password" />
+              </label>
+              <button type="submit">Unlock upload</button>
+            </form>
+            <p id="unlock-message" class="unlock-message">Use the password to reveal the upload form.</p>
+          </div>
+
+          <div id="upload-form-wrapper" class="upload-form-wrapper hidden">
+            <h2>Add a new story</h2>
+            <form id="report-form">
+              <label>
+                Story title
+                <input name="title" type="text" placeholder="Passive house case study" required />
+              </label>
+              <label>
+                Theme
+                <input name="category" type="text" placeholder="Energy / Materials / Urban planning" />
+              </label>
+              <label>
+                Source link
+                <input name="sourceUrl" type="url" placeholder="https://..." />
+              </label>
+              <label>
+                What stood out?
+                <textarea name="notes" rows="3" placeholder="Share a key insight, lesson, or hopeful idea."></textarea>
+              </label>
+              <label>
+                Upload a file
+                <input name="file" type="file" accept=".pdf,.doc,.docx,.txt,image/*" />
+              </label>
+              <button type="submit">Save story</button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
