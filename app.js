@@ -10,7 +10,9 @@ const uploadFormWrapper = document.getElementById("upload-form-wrapper");
 const unlockPanel = document.getElementById("unlock-panel");
 const unlockMessage = document.getElementById("unlock-message");
 const managePanel = document.getElementById("manage-panel");
+const DELETED_STORY_IDS_KEY = "ivy-leaf-deleted-story-ids";
 
+let deletedStoryIds = loadDeletedStoryIds();
 let reports = loadReports();
 let isUnlocked = sessionStorage.getItem("ivy-leaf-unlocked") === "true";
 let isSyncing = false;
@@ -98,10 +100,21 @@ if (reportForm) {
   });
 }
 
+function loadDeletedStoryIds() {
+  try {
+    const raw = localStorage.getItem(DELETED_STORY_IDS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    console.error("Could not load deleted story IDs", error);
+    return [];
+  }
+}
+
 function loadReports() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const loadedReports = raw ? JSON.parse(raw) : [];
+    return loadedReports.filter((report) => !deletedStoryIds.includes(report.id));
   } catch (error) {
     console.error("Could not load reports", error);
     return [];
@@ -110,10 +123,13 @@ function loadReports() {
 
 function saveReportsToLocalStorage() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+  localStorage.setItem(DELETED_STORY_IDS_KEY, JSON.stringify(deletedStoryIds));
 }
 
 function getRemotePayload() {
-  return reports.map((report) => {
+  return reports
+    .filter((report) => !deletedStoryIds.includes(report.id))
+    .map((report) => {
     if (!report.fileData) {
       return report;
     }
@@ -158,13 +174,17 @@ async function loadRemoteReports() {
   }
 }
 
-function mergeReports(localReports, remoteReports) {
+function mergeReports(localReports, remoteReports, deletedIds = []) {
   const merged = new Map();
+  const deletedIdSet = new Set(deletedIds);
 
   [...remoteReports, ...localReports].forEach((report) => {
-    if (report && report.id) {
-      merged.set(report.id, report);
+    if (!report || !report.id || deletedIdSet.has(report.id)) {
+      return;
     }
+
+    const existing = merged.get(report.id);
+    merged.set(report.id, existing ? { ...existing, ...report } : report);
   });
 
   return Array.from(merged.values()).sort((left, right) => {
@@ -363,6 +383,7 @@ async function removeStory(storyId) {
     return;
   }
 
+  deletedStoryIds = Array.from(new Set([...deletedStoryIds, storyId]));
   reports = reports.filter((report) => report.id !== storyId);
   await saveReports();
   renderReports();
@@ -384,8 +405,8 @@ async function initReports() {
   try {
     const remoteReports = await loadRemoteReports();
 
-    if (remoteReports.length) {
-      reports = mergeReports(reports, remoteReports);
+    if (remoteReports.length || deletedStoryIds.length) {
+      reports = mergeReports(reports, remoteReports, deletedStoryIds);
       saveReportsToLocalStorage();
     }
 
