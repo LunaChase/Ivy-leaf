@@ -1,14 +1,15 @@
 :root {
   color-scheme: light;
-  --bg: #f3f5ee;
-  --card: #ffffff;
-  --text: #1f2a1f;
-  --muted: #647267;
-  --accent: #2f6b4f;
-  --accent-dark: #1f4a35;
-  --accent-soft: #dceede;
-  --border: #d8e2d8;
-  --shadow: 0 12px 30px rgba(15, 37, 22, 0.08);
+  --bg: #f4f2ea;
+  --card: #fffdfa;
+  --text: #1f2d22;
+  --muted: #5e6d61;
+  --accent: #2d6a4f;
+  --accent-dark: #1d4737;
+  --accent-soft: #e5f0e8;
+  --border: #d8e3d8;
+  --shadow: 0 16px 40px rgba(29, 71, 55, 0.10);
+  --radius: 24px;
 }
 
 * {
@@ -22,54 +23,58 @@ html {
 body {
   margin: 0;
   font-family: Inter, "Segoe UI", Roboto, sans-serif;
-  background: linear-gradient(135deg, #f8fbf4 0%, var(--bg) 100%);
+  background:
+    radial-gradient(circle at top left, rgba(45, 106, 79, 0.10), transparent 28%),
+    linear-gradient(135deg, #faf7ef 0%, var(--bg) 100%);
   color: var(--text);
 }
 
 .page-shell {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding: 36px 22px 72px;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: 1.2fr 0.9fr;
-  gap: 24px;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 28px;
   align-items: start;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 .hero-content {
-  padding: 8px 4px;
+  padding: 6px 4px;
 }
 
 .eyebrow {
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  font-size: 0.78rem;
   color: var(--accent);
   font-weight: 700;
+  margin-bottom: 10px;
 }
 
 h1 {
-  margin: 8px 0 12px;
-  font-size: clamp(2rem, 3.5vw, 3rem);
+  margin: 0 0 14px;
+  font-size: clamp(2rem, 3.2vw, 3rem);
   line-height: 1.08;
+  letter-spacing: -0.02em;
 }
 
 .hero-copy {
   font-size: 1rem;
   line-height: 1.75;
   color: var(--muted);
-  max-width: 650px;
+  max-width: 680px;
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 20px 0 14px;
+  margin: 22px 0 16px;
 }
 
 .button.ghost {
@@ -95,11 +100,13 @@ h1 {
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
+  transition: transform 180ms ease, background 180ms ease;
 }
 
 .topic-pill:hover {
   background: var(--accent);
   color: white;
+  transform: translateY(-1px);
 }
 
 .button {
@@ -110,17 +117,23 @@ h1 {
   padding: 11px 16px;
   text-decoration: none;
   font-weight: 700;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .button.primary {
   background: var(--accent);
   color: white;
+  box-shadow: 0 10px 24px rgba(45, 106, 79, 0.18);
 }
 
 .button.secondary {
   background: var(--card);
   color: var(--accent-dark);
   border: 1px solid var(--border);
+}
+
+.button:hover {
+  transform: translateY(-1px);
 }
 
 .remove-button {
@@ -153,12 +166,16 @@ h1 {
 .archive-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
 .hero-card {
   padding: 20px;
+}
+
+.hero-card .info-card {
+  border: 1px solid rgba(45, 106, 79, 0.16);
 }
 
 .upload-panel,
@@ -257,12 +274,12 @@ button {
 }
 
 .owner-card {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 18px;
+  padding: 20px;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
@@ -279,15 +296,15 @@ button {
   padding: 24px;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
 .archive-preview {
-  padding: 16px 18px;
-  background: var(--card);
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(229, 240, 232, 0.6), rgba(255, 253, 250, 0.95));
   border: 1px dashed var(--border);
-  border-radius: 16px;
+  border-radius: 18px;
   color: var(--muted);
 }
 
@@ -314,6 +331,11 @@ button {
   padding: 18px;
   display: grid;
   gap: 10px;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.report-card:hover {
+  transform: translateY(-2px);
 }
 
 .report-card h3 {
@@ -336,6 +358,33 @@ button {
 .notes {
   color: var(--muted);
   line-height: 1.55;
+}
+
+.engagement-meta {
+  color: var(--accent);
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.action-button {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.action-button:hover {
+  background: var(--accent);
+  color: white;
 }
 
 .preview {
@@ -363,7 +412,7 @@ button {
   color: var(--muted);
   background: var(--card);
   border: 1px dashed var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
 }
 
 .empty-state p {

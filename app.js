@@ -85,6 +85,8 @@ if (reportForm) {
       fileName: file?.name || "",
       fileType: file?.type || "",
       fileData: fileData || "",
+      readCount: 0,
+      likeCount: 0,
     };
 
     reports = [report, ...reports];
@@ -192,6 +194,11 @@ function getSourceUrl(rawUrl) {
   return trimmedUrl;
 }
 
+function getReadCountLabel(count) {
+  const safeCount = Number(count) || 0;
+  return `${safeCount} ${safeCount === 1 ? "person" : "people"} read this`;
+}
+
 function renderReports() {
   if (!reportList) {
     return;
@@ -236,10 +243,15 @@ function renderReports() {
           <span class="badge">${escapeHtml(report.category)}</span>
           <h3>${escapeHtml(report.title)}</h3>
           <p class="meta">Added ${new Date(report.createdAt).toLocaleDateString()}</p>
+          <p class="engagement-meta">${escapeHtml(getReadCountLabel(report.readCount))} • ${escapeHtml(`${report.likeCount || 0} ${report.likeCount === 1 ? "like" : "likes"}`)}</p>
           ${report.notes ? `<p class="notes">${escapeHtml(report.notes)}</p>` : ""}
           ${sourceMarkup ? `<p>${sourceMarkup}</p>` : ""}
           ${previewMarkup}
           ${report.fileData ? `<a href="${escapeAttribute(report.fileData)}" download="${escapeAttribute(report.fileName || "report")}">Download file</a>` : ""}
+          <div class="card-actions">
+            <button class="action-button read-button" data-id="${escapeAttribute(report.id)}" type="button">Read story</button>
+            <button class="action-button like-button" data-id="${escapeAttribute(report.id)}" type="button">👍 ${escapeHtml(String(report.likeCount || 0))}</button>
+          </div>
           ${isUnlocked ? `<button class="remove-button" data-id="${escapeAttribute(report.id)}" type="button">Remove story</button>` : ""}
         </article>
       `;
@@ -249,6 +261,18 @@ function renderReports() {
   reportList.querySelectorAll(".remove-button").forEach((button) => {
     button.addEventListener("click", () => {
       removeStory(button.dataset.id);
+    });
+  });
+
+  reportList.querySelectorAll(".read-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      markStoryRead(button.dataset.id);
+    });
+  });
+
+  reportList.querySelectorAll(".like-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      likeStory(button.dataset.id);
     });
   });
 }
@@ -296,6 +320,37 @@ function showUploadForm() {
     uploadFormWrapper.classList.remove("hidden");
     unlockPanel.classList.add("hidden");
   }
+}
+
+async function markStoryRead(storyId) {
+  const report = reports.find((entry) => entry.id === storyId);
+
+  if (!report) {
+    return;
+  }
+
+  report.readCount = (Number(report.readCount) || 0) + 1;
+  await saveReports();
+  renderReports();
+
+  if (report.sourceUrl) {
+    const targetUrl = getSourceUrl(report.sourceUrl);
+    if (targetUrl) {
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
+    }
+  }
+}
+
+async function likeStory(storyId) {
+  const report = reports.find((entry) => entry.id === storyId);
+
+  if (!report) {
+    return;
+  }
+
+  report.likeCount = (Number(report.likeCount) || 0) + 1;
+  await saveReports();
+  renderReports();
 }
 
 async function removeStory(storyId) {
