@@ -1,6 +1,7 @@
 import { normalizeCategory, getCategorySlugFromPath, getCategoryLabel } from "./story-utils.js";
 
 const STORAGE_KEY = "ivy-leaf-reports";
+const REMOTE_STORAGE_URL = "https://jsonblob.com/api/jsonBlob/019f7533-2a92-7c17-9b9c-d3e9ef99cb87";
 const OWNER_PASSWORD = "FlWkOtLcAlPjOSoKe3f343v3r4212";
 const reportForm = document.getElementById("report-form");
 const unlockForm = document.getElementById("unlock-form");
@@ -8,13 +9,20 @@ const reportList = document.getElementById("report-list");
 const uploadFormWrapper = document.getElementById("upload-form-wrapper");
 const unlockPanel = document.getElementById("unlock-panel");
 const unlockMessage = document.getElementById("unlock-message");
+const managePanel = document.getElementById("manage-panel");
 
 let reports = loadReports();
 let isUnlocked = sessionStorage.getItem("ivy-leaf-unlocked") === "true";
+let isSyncing = false;
+let syncError = "";
 const currentCategorySlug = getCategorySlugFromPath(window.location.pathname);
 
 if (isUnlocked && uploadFormWrapper && unlockPanel) {
   showUploadForm();
+}
+
+if (isUnlocked && managePanel) {
+  managePanel.classList.remove("hidden");
 }
 
 if (unlockForm && unlockMessage) {
@@ -28,7 +36,10 @@ if (unlockForm && unlockMessage) {
       sessionStorage.setItem("ivy-leaf-unlocked", "true");
       isUnlocked = true;
       showUploadForm();
-      unlockMessage.textContent = "Upload unlocked. You can now add stories.";
+      if (managePanel) {
+        managePanel.classList.remove("hidden");
+      }
+      unlockMessage.textContent = "Owner tools unlocked. You can add or remove stories.";
     } else {
       unlockMessage.textContent = "Incorrect password. Only the owner can add stories.";
     }
@@ -77,7 +88,7 @@ if (reportForm) {
     };
 
     reports = [report, ...reports];
-    saveReports();
+    await saveReports();
     reportForm.reset();
 
     const targetPage = getCategoryPagePath(normalizedCategory.slug);
@@ -95,8 +106,68 @@ function loadReports() {
   }
 }
 
-function saveReports() {
+function saveReportsToLocalStorage() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+}
+
+function getRemotePayload() {
+  return reports.map((report) => {
+    if (!report.fileData) {
+      return report;
+    }
+
+    const { fileData, ...rest } = report;
+    return {
+      ...rest,
+      fileData: "",
+    };
+  });
+}
+
+async function saveReports() {
+  saveReportsToLocalStorage();
+
+  try {
+    await fetch(REMOTE_STORAGE_URL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(getRemotePayload()),
+    });
+  } catch (error) {
+    console.warn("Could not sync reports to the shared archive", error);
+  }
+}
+
+async function loadRemoteReports() {
+  try {
+    const response = await fetch(REMOTE_STORAGE_URL);
+
+    if (!response.ok) {
+      throw new Error(`Remote storage returned ${response.status}`);
+    }
+
+    const remoteReports = await response.json();
+    return Array.isArray(remoteReports) ? remoteReports : [];
+  } catch (error) {
+    console.warn("Could not load reports from the shared archive", error);
+    return [];
+  }
+}
+
+function mergeReports(localReports, remoteReports) {
+  const merged = new Map();
+
+  [...remoteReports, ...localReports].forEach((report) => {
+    if (report && report.id) {
+      merged.set(report.id, report);
+    }
+  });
+
+  return Array.from(merged.values()).sort((left, right) => {
+    return new Date(right.createdAt || 0) - new Date(left.createdAt || 0);
+  });
 }
 
 function getSourceUrl(rawUrl) {
@@ -130,10 +201,23 @@ function renderReports() {
     ? reports
     : reports.filter((report) => report.categorySlug === currentCategorySlug);
 
-  if (!filteredReports.length) {
+  if (isSyncing) {
     reportList.innerHTML = `
       <div class="empty-state">
-        <p>No stories yet in ${getCategoryLabel(currentCategorySlug)}.</p>
+        <p>Syncing the archive… stories will appear shortly.</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (!filteredReports.length) {
+    const emptyMessage = syncError
+      ? `We could not load the shared archive right now. ${syncError}`
+      : `No stories yet in ${getCategoryLabel(currentCategorySlug)}.`;
+
+    reportList.innerHTML = `
+      <div class="empty-state">
+        <p>${emptyMessage}</p>
       </div>
     `;
     return;
@@ -156,10 +240,17 @@ function renderReports() {
           ${sourceMarkup ? `<p>${sourceMarkup}</p>` : ""}
           ${previewMarkup}
           ${report.fileData ? `<a href="${escapeAttribute(report.fileData)}" download="${escapeAttribute(report.fileName || "report")}">Download file</a>` : ""}
+          ${isUnlocked ? `<button class="remove-button" data-id="${escapeAttribute(report.id)}" type="button">Remove story</button>` : ""}
         </article>
       `;
     })
     .join("");
+
+  reportList.querySelectorAll(".remove-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      removeStory(button.dataset.id);
+    });
+  });
 }
 
 function renderPreview(report) {
@@ -207,6 +298,21 @@ function showUploadForm() {
   }
 }
 
+async function removeStory(storyId) {
+  if (!isUnlocked) {
+    alert("Please unlock owner tools first.");
+    return;
+  }
+
+  if (!confirm("Remove this story from the archive?")) {
+    return;
+  }
+
+  reports = reports.filter((report) => report.id !== storyId);
+  await saveReports();
+  renderReports();
+}
+
 function getCategoryPagePath(categorySlug) {
   if (categorySlug === "urban-design") return "urban-design.html";
   if (categorySlug === "architecture") return "architecture.html";
@@ -216,4 +322,25 @@ function getCategoryPagePath(categorySlug) {
   return "library.html";
 }
 
-renderReports();
+async function initReports() {
+  isSyncing = true;
+  renderReports();
+
+  try {
+    const remoteReports = await loadRemoteReports();
+
+    if (remoteReports.length) {
+      reports = mergeReports(reports, remoteReports);
+      saveReportsToLocalStorage();
+    }
+
+    syncError = "";
+  } catch (error) {
+    syncError = error.message;
+  } finally {
+    isSyncing = false;
+    renderReports();
+  }
+}
+
+initReports();

@@ -123,6 +123,14 @@ h1 {
   border: 1px solid var(--border);
 }
 
+.remove-button {
+  background: #8c2f2f;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+
 .feature-list {
   display: grid;
   gap: 8px;
@@ -356,6 +364,11 @@ button {
   background: var(--card);
   border: 1px dashed var(--border);
   border-radius: 20px;
+}
+
+.empty-state p {
+  margin: 0;
+  line-height: 1.7;
 }
 
 @media (max-width: 900px) {
