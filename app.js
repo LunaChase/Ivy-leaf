@@ -395,6 +395,7 @@ function getCategoryPagePath(categorySlug) {
   if (categorySlug === "engineering") return "engineering.html";
   if (categorySlug === "innovations") return "innovations.html";
   if (categorySlug === "environmental-reports") return "environmental-reports.html";
+  if (categorySlug === "building-it-better") return "building-it-better.html";
   return "library.html";
 }
 

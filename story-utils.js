@@ -5,6 +5,10 @@ export function normalizeCategory(rawCategory) {
     return { slug: "urban-design", label: "Urban design" };
   }
 
+  if (/(?:\bbib\b|b\.i\.b\.|building it better)/.test(text)) {
+    return { slug: "building-it-better", label: "Building it better" };
+  }
+
   if (/(architect|building|facade|housing|structure|design)/.test(text)) {
     return { slug: "architecture", label: "Architecture" };
   }
@@ -31,6 +35,7 @@ export function getCategorySlugFromPath(pathname = window.location.pathname) {
   if (path.startsWith("engineering")) return "engineering";
   if (path.startsWith("innovations")) return "innovations";
   if (path.startsWith("environmental-reports")) return "environmental-reports";
+  if (path.startsWith("building-it-better")) return "building-it-better";
   if (path.startsWith("library")) return "all";
   return "all";
 }
@@ -42,6 +47,7 @@ export function getCategoryLabel(slug) {
     engineering: "Engineering",
     innovations: "Innovations",
     "environmental-reports": "Environmental reports",
+    "building-it-better": "Building it better",
     all: "All stories",
   };
 
