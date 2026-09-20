@@ -325,6 +325,11 @@ function renderReports() {
       const isExpanded = expandedStoryIds.has(report.id);
       const expandedMarkup = renderExpandedStory(report, isExpanded);
 
+      const hasImageStory = !!(report.fileType && report.fileType.startsWith("image/")) || (Array.isArray(report.gallery) && report.gallery.length > 0);
+      const fileDownloadMarkup = hasImageStory || !report.fileData
+        ? ""
+        : `<a href="${escapeAttribute(report.fileData)}" download="${escapeAttribute(report.fileName || "report")}">Download file</a>`;
+
       return `
         <article class="report-card">
           <span class="badge">${escapeHtml(report.category)}</span>
@@ -335,7 +340,7 @@ function renderReports() {
           ${sourceMarkup ? `<p>${sourceMarkup}</p>` : ""}
           ${previewMarkup}
           ${expandedMarkup}
-          ${report.fileData ? `<a href="${escapeAttribute(report.fileData)}" download="${escapeAttribute(report.fileName || "report")}">Download file</a>` : ""}
+          ${fileDownloadMarkup}
           <div class="card-actions">
             <button class="action-button read-button" data-id="${escapeAttribute(report.id)}" type="button">${isExpanded ? "Hide story" : "Read story"}</button>
             <button class="action-button like-button" data-id="${escapeAttribute(report.id)}" type="button">👍 ${escapeHtml(String(report.likeCount || 0))}</button>
