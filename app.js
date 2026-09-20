@@ -98,11 +98,15 @@ if (reportForm) {
     };
 
     reports = [report, ...reports];
-    await saveReports();
     reportForm.reset();
 
     const targetPage = getCategoryPagePath(normalizedCategory.slug);
-    window.location.assign(`${targetPage}?saved=1`);
+
+    try {
+      await saveReports();
+    } finally {
+      window.location.assign(`${targetPage}?saved=1`);
+    }
   });
 }
 
@@ -189,13 +193,20 @@ async function saveReports() {
   saveReportsToLocalStorage();
 
   try {
-    await fetch(REMOTE_STORAGE_URL, {
+    const remoteSync = fetch(REMOTE_STORAGE_URL, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(getRemotePayload()),
     });
+
+    await Promise.race([
+      remoteSync,
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Remote sync timed out")), 5000);
+      }),
+    ]);
   } catch (error) {
     console.warn("Could not sync reports to the shared archive", error);
   }
