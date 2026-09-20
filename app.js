@@ -11,6 +11,7 @@ const unlockPanel = document.getElementById("unlock-panel");
 const unlockMessage = document.getElementById("unlock-message");
 const managePanel = document.getElementById("manage-panel");
 const DELETED_STORY_IDS_KEY = "ivy-leaf-deleted-story-ids";
+const MAX_STORED_FILE_DATA_BYTES = 1_200_000;
 
 let deletedStoryIds = loadDeletedStoryIds();
 let reports = loadReports();
@@ -74,7 +75,12 @@ if (reportForm) {
     }
 
     const fileData = file && file.size > 0 ? await readFileAsDataUrl(file) : null;
-    const normalizedCategory = normalizeCategory(category);
+    const normalizedCategory = category
+      ? normalizeCategory(category)
+      : currentCategorySlug === "all"
+        ? { slug: "all", label: "All stories" }
+        : { slug: currentCategorySlug, label: getCategoryLabel(currentCategorySlug) };
+    const safeFileData = sanitizeStoredFileData(fileData);
 
     const report = {
       id: crypto.randomUUID(),
@@ -86,7 +92,7 @@ if (reportForm) {
       createdAt: new Date().toISOString(),
       fileName: file?.name || "",
       fileType: file?.type || "",
-      fileData: fileData || "",
+      fileData: safeFileData,
       readCount: 0,
       likeCount: 0,
     };
@@ -121,9 +127,46 @@ function loadReports() {
   }
 }
 
+function estimateDataUrlSize(value) {
+  if (!value) {
+    return 0;
+  }
+
+  const stringValue = String(value);
+  return Math.ceil((stringValue.length * 3) / 4);
+}
+
+function sanitizeStoredFileData(fileData) {
+  if (!fileData) {
+    return "";
+  }
+
+  return estimateDataUrlSize(fileData) <= MAX_STORED_FILE_DATA_BYTES ? fileData : "";
+}
+
 function saveReportsToLocalStorage() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
-  localStorage.setItem(DELETED_STORY_IDS_KEY, JSON.stringify(deletedStoryIds));
+  const storageReports = reports.map((report) => ({
+    ...report,
+    fileData: sanitizeStoredFileData(report.fileData),
+  }));
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(storageReports));
+    localStorage.setItem(DELETED_STORY_IDS_KEY, JSON.stringify(deletedStoryIds));
+  } catch (error) {
+    console.warn("Could not save the full uploaded archive to the browser. Saving metadata without large attachments.", error);
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        storageReports.map((report) => ({
+          ...report,
+          fileData: "",
+        }))
+      )
+    );
+    localStorage.setItem(DELETED_STORY_IDS_KEY, JSON.stringify(deletedStoryIds));
+  }
 }
 
 function getRemotePayload() {

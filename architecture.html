@@ -20,6 +20,50 @@
         <h2>Architecture stories</h2>
         <div id="report-list" class="report-list"></div>
       </section>
+
+      <section class="owner-section" id="owner-access">
+        <div class="owner-card">
+          <div id="unlock-panel" class="upload-panel">
+            <h2>Owner access</h2>
+            <p class="upload-copy">Visitors can browse the stories, but only the owner can add new ones.</p>
+            <form id="unlock-form" class="unlock-form">
+              <label>
+                Owner password
+                <input name="password" type="password" placeholder="Enter password" />
+              </label>
+              <button type="submit">Unlock upload</button>
+            </form>
+            <p id="unlock-message" class="unlock-message">Use the password to reveal the upload form.</p>
+          </div>
+
+          <div id="upload-form-wrapper" class="upload-form-wrapper hidden">
+            <h2>Add a new story</h2>
+            <form id="report-form">
+              <label>
+                Story title
+                <input name="title" type="text" placeholder="Passive house case study" required />
+              </label>
+              <label>
+                Theme
+                <input name="category" type="text" placeholder="Energy / Materials / Urban planning" />
+              </label>
+              <label>
+                Source link
+                <input name="sourceUrl" type="url" placeholder="https://..." />
+              </label>
+              <label>
+                What stood out?
+                <textarea name="notes" rows="3" placeholder="Share a key insight, lesson, or hopeful idea."></textarea>
+              </label>
+              <label>
+                Upload a file
+                <input name="file" type="file" accept=".pdf,.doc,.docx,.txt,image/*" />
+              </label>
+              <button type="submit">Save story</button>
+            </form>
+          </div>
+        </div>
+      </section>
     </main>
     <script type="module" src="app.js?v=20260718-4"></script>
   </body>
