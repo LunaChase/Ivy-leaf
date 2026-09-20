@@ -18,6 +18,7 @@ let reports = loadReports();
 let isUnlocked = sessionStorage.getItem("ivy-leaf-unlocked") === "true";
 let isSyncing = false;
 let syncError = "";
+const expandedStoryIds = new Set();
 const currentCategorySlug = getCategorySlugFromPath(window.location.pathname);
 
 if (isUnlocked && uploadFormWrapper && unlockPanel) {
@@ -58,7 +59,8 @@ if (reportForm) {
     const category = formData.get("category").toString().trim();
     const sourceUrl = formData.get("sourceUrl").toString().trim();
     const notes = formData.get("notes").toString().trim();
-    const file = formData.get("file");
+    const files = Array.from(formData.getAll("file")).filter((file) => file && file.size > 0);
+    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
 
     if (!isUnlocked) {
       alert("Please unlock the upload panel first.");
@@ -69,18 +71,19 @@ if (reportForm) {
       return;
     }
 
-    if (!sourceUrl && !file) {
-      alert("Add either a source link or upload a file.");
+    if (!sourceUrl && !imageFiles.length && !notes) {
+      alert("Add a source link, notes, or upload a screenshot.");
       return;
     }
 
-    const fileData = file && file.size > 0 ? await readFileAsDataUrl(file) : null;
+    const gallery = imageFiles.length ? await readFilesAsDataUrl(imageFiles) : [];
+    const firstImageData = gallery[0]?.fileData || "";
     const normalizedCategory = category
       ? normalizeCategory(category)
       : currentCategorySlug === "all"
         ? { slug: "all", label: "All stories" }
         : { slug: currentCategorySlug, label: getCategoryLabel(currentCategorySlug) };
-    const safeFileData = sanitizeStoredFileData(fileData);
+    const safeFileData = sanitizeStoredFileData(firstImageData);
 
     const report = {
       id: crypto.randomUUID(),
@@ -90,9 +93,14 @@ if (reportForm) {
       sourceUrl,
       notes,
       createdAt: new Date().toISOString(),
-      fileName: file?.name || "",
-      fileType: file?.type || "",
+      fileName: imageFiles[0]?.name || "",
+      fileType: imageFiles[0]?.type || "",
       fileData: safeFileData,
+      gallery: gallery.map((image) => ({
+        fileName: image.fileName,
+        fileType: image.fileType,
+        fileData: sanitizeStoredFileData(image.fileData),
+      })),
       readCount: 0,
       likeCount: 0,
     };
@@ -152,6 +160,12 @@ function saveReportsToLocalStorage() {
   const storageReports = reports.map((report) => ({
     ...report,
     fileData: sanitizeStoredFileData(report.fileData),
+    gallery: Array.isArray(report.gallery)
+      ? report.gallery.map((image) => ({
+          ...image,
+          fileData: sanitizeStoredFileData(image.fileData),
+        }))
+      : [],
   }));
 
   try {
@@ -177,16 +191,13 @@ function getRemotePayload() {
   return reports
     .filter((report) => !deletedStoryIds.includes(report.id))
     .map((report) => {
-    if (!report.fileData) {
-      return report;
-    }
-
-    const { fileData, ...rest } = report;
-    return {
-      ...rest,
-      fileData: "",
-    };
-  });
+      const { fileData, gallery, ...rest } = report;
+      return {
+        ...rest,
+        fileData: "",
+        gallery: [],
+      };
+    });
 }
 
 async function saveReports() {
@@ -311,6 +322,8 @@ function renderReports() {
       const sourceMarkup = sourceUrl
         ? `<a href="${escapeAttribute(sourceUrl)}" target="_blank" rel="noreferrer">Open public preview</a>`
         : "";
+      const isExpanded = expandedStoryIds.has(report.id);
+      const expandedMarkup = renderExpandedStory(report, isExpanded);
 
       return `
         <article class="report-card">
@@ -321,9 +334,10 @@ function renderReports() {
           ${report.notes ? `<p class="notes">${escapeHtml(report.notes)}</p>` : ""}
           ${sourceMarkup ? `<p>${sourceMarkup}</p>` : ""}
           ${previewMarkup}
+          ${expandedMarkup}
           ${report.fileData ? `<a href="${escapeAttribute(report.fileData)}" download="${escapeAttribute(report.fileName || "report")}">Download file</a>` : ""}
           <div class="card-actions">
-            <button class="action-button read-button" data-id="${escapeAttribute(report.id)}" type="button">Read story</button>
+            <button class="action-button read-button" data-id="${escapeAttribute(report.id)}" type="button">${isExpanded ? "Hide story" : "Read story"}</button>
             <button class="action-button like-button" data-id="${escapeAttribute(report.id)}" type="button">👍 ${escapeHtml(String(report.likeCount || 0))}</button>
           </div>
           ${isUnlocked ? `<button class="remove-button" data-id="${escapeAttribute(report.id)}" type="button">Remove story</button>` : ""}
@@ -352,19 +366,52 @@ function renderReports() {
 }
 
 function renderPreview(report) {
-  if (!report.fileData) {
+  const imageUrls = getStoryImages(report);
+
+  if (!imageUrls.length) {
     return "";
   }
 
-  if (report.fileType.startsWith("image/")) {
-    return `<div class="preview"><img src="${escapeAttribute(report.fileData)}" alt="${escapeHtml(report.title)}" /></div>`;
+  const firstImage = imageUrls[0];
+  if (report.fileType.startsWith("image/") || firstImage.startsWith("data:image/")) {
+    return `<div class="preview"><img src="${escapeAttribute(firstImage)}" alt="${escapeHtml(report.title)}" /></div>`;
   }
 
   if (report.fileType === "application/pdf") {
-    return `<div class="preview"><iframe src="${escapeAttribute(report.fileData)}"></iframe></div>`;
+    return `<div class="preview"><iframe src="${escapeAttribute(firstImage)}"></iframe></div>`;
   }
 
   return `<div class="preview"><p class="notes">Uploaded file: ${escapeHtml(report.fileName || "report")}</p></div>`;
+}
+
+function renderExpandedStory(report, isExpanded) {
+  if (!isExpanded) {
+    return "";
+  }
+
+  const imageUrls = getStoryImages(report);
+  const storySummary = report.notes ? `<p class="story-copy">${escapeHtml(report.notes)}</p>` : "";
+  const sourceUrl = report.sourceUrl ? getSourceUrl(report.sourceUrl) : "";
+  const sourceMarkup = sourceUrl
+    ? `<p><a href="${escapeAttribute(sourceUrl)}" target="_blank" rel="noreferrer">Open source</a></p>`
+    : "";
+  const galleryMarkup = imageUrls.length
+    ? `<div class="story-gallery">${imageUrls
+        .map((imageUrl) => `<img src="${escapeAttribute(imageUrl)}" alt="${escapeHtml(report.title)}" />`)
+        .join("")}</div>`
+    : "";
+
+  return `<div class="story-expanded">${storySummary}${sourceMarkup}${galleryMarkup}</div>`;
+}
+
+function getStoryImages(report) {
+  if (Array.isArray(report.gallery) && report.gallery.length) {
+    return report.gallery
+      .map((entry) => entry.fileData)
+      .filter(Boolean);
+  }
+
+  return report.fileData ? [report.fileData] : [];
 }
 
 function readFileAsDataUrl(file) {
@@ -374,6 +421,21 @@ function readFileAsDataUrl(file) {
     reader.onerror = () => reject(new Error("Unable to read file"));
     reader.readAsDataURL(file);
   });
+}
+
+async function readFilesAsDataUrl(files) {
+  const results = [];
+
+  for (const file of files) {
+    const fileData = await readFileAsDataUrl(file);
+    results.push({
+      fileName: file.name,
+      fileType: file.type,
+      fileData,
+    });
+  }
+
+  return results;
 }
 
 function escapeHtml(value) {
@@ -404,15 +466,17 @@ async function markStoryRead(storyId) {
   }
 
   report.readCount = (Number(report.readCount) || 0) + 1;
-  await saveReports();
-  renderReports();
 
-  if (report.sourceUrl) {
-    const targetUrl = getSourceUrl(report.sourceUrl);
-    if (targetUrl) {
-      window.open(targetUrl, "_blank", "noopener,noreferrer");
+  if (report.notes || report.fileData || report.gallery?.length || report.sourceUrl) {
+    if (expandedStoryIds.has(storyId)) {
+      expandedStoryIds.delete(storyId);
+    } else {
+      expandedStoryIds.add(storyId);
     }
   }
+
+  await saveReports();
+  renderReports();
 }
 
 async function likeStory(storyId) {

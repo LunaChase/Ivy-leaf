@@ -406,6 +406,34 @@ button {
   min-height: 240px;
 }
 
+.story-expanded {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.story-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.story-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.story-gallery img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fafaf5;
+}
+
 .empty-state {
   padding: 24px;
   text-align: center;
